@@ -34,7 +34,7 @@ namespace OreDetector
             helper.Events.Player.Warped += this.OnWarped;
             helper.Events.World.ObjectListChanged += this.OnObjectListChanged;
             helper.Events.Display.Rendered += this.OnRendered;
-            springObjects = Helper.GameContent.Load<Texture2D>("maps\\springobjects.png");
+            springObjects = Game1.content.Load<Texture2D>("maps\\springobjects");
         }
 
 
@@ -84,7 +84,7 @@ namespace OreDetector
             if (Game1.player.currentLocation != currentShaft)
                 return;
 
-            DrawOverlayAbovePlayer(Game1.spriteBatch);
+            DrawOverlayBottomLeftCorner(Game1.spriteBatch);
 
 
         }
@@ -99,7 +99,6 @@ namespace OreDetector
             float transparency = player.isMoving() ? 0.1f : 1.0f;
             Vector2 position = new Vector2(player.Position.X - Game1.viewport.X, player.Position.Y - Game1.viewport.Y);
 
-            //batch.DrawString(Game1.dialogueFont, "Test", position, Color.White);
             string result = "";
             int text_offsetY = detector.Ores.Count - 1;
 
@@ -111,8 +110,32 @@ namespace OreDetector
                     padding = text.Length;
                 result += text;
             }
+            Vector2 finalPosition = position + new Vector2(-4 * padding, -128 - Game1.dialogueFont.LineSpacing * text_offsetY);
 
-            batch.DrawString(Game1.dialogueFont, result, position + new Vector2(-4 * padding , -128 - Game1.dialogueFont.LineSpacing * text_offsetY), Color.White * transparency);
+            batch.DrawString(Game1.dialogueFont, result, finalPosition, Color.White * transparency);
+
+        }
+        private void DrawOverlayTopLeftCorner(SpriteBatch batch)
+        {
+            if (Game1.activeClickableMenu != null)
+                return;
+
+            Vector2 position = new Vector2(0, 80);
+
+            string result = "";
+            int text_offsetY = detector.Ores.Count - 1;
+
+            int padding = 0;
+            foreach (var item in detector.Ores)
+            {
+                string text = $"{item.Key}: {detector.MinedOres[item.Key].Count} / {item.Value.Count}\n";
+                if (text.Length > padding)
+                    padding = text.Length;
+                result += text;
+            }
+            //Vector2 finalPosition = position + new Vector2(0, 128 + Game1.dialogueFont.LineSpacing * text_offsetY);
+
+            batch.DrawString(Game1.dialogueFont, result, position, Color.White);
 
         }
     }
