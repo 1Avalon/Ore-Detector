@@ -9,5 +9,7 @@ namespace OreDetector
     public sealed class ModConfig
     {
         public string PositionOption { get; set; } = "Above player";
+
+        public bool arrowPointingToLadder = false;
     }
 }
