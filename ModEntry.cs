@@ -3,11 +3,9 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
-using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.ItemTypeDefinitions;
 using StardewValley.Locations;
-using System.Security.Cryptography;
 
 namespace OreDetector
 {
@@ -23,8 +21,6 @@ namespace OreDetector
 
         public static ModEntry instance;
 
-        private MineShaft currentShaft;
-
         private OreDetector detector;
 
         private Texture2D ladderTexture;
@@ -34,7 +30,7 @@ namespace OreDetector
         public override void Entry(IModHelper helper)
         {
             instance = this;
-            detector = new();
+            detector = OreDetector.GetOreDetector();
             helper.Events.Player.Warped += this.OnWarped;
             helper.Events.World.ObjectListChanged += this.OnObjectListChanged;
             helper.Events.Display.Rendered += this.OnRendered;
@@ -69,23 +65,33 @@ namespace OreDetector
                 setValue: value => Config.PositionOption = value,
                 allowedValues: new string[] { "Above player", "Top left", "Next to cursor" }
             );
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Draw Arrow pointing towards ladder",
+                getValue: () => Config.arrowPointingToLadder,
+                setValue: value => Config.arrowPointingToLadder = value
+            );
         }
 
         private void OnWarped(object? sender, WarpedEventArgs e)
         {
-            if (e.NewLocation is MineShaft shaft)
+            if (e.NewLocation is MineShaft)
             {
-                currentShaft = shaft;
                 detector.GetOreInCurrentShaft();
-                foreach(var item in detector.Ores)
-                {
-                    Monitor.Log($"Max {item.Key}: {item.Value.Count}");
-                }
+                detector.LookForSpawnedLadders();
             }
+        }
+
+        private void OnNPCListChanged(object sender, NpcListChangedEventArgs e)
+        {
+            if (detector.currentShaft == null)
+                return;
+
+            detector.LookForSpawnedLadders();
         }
         private void OnObjectListChanged(object? sender, ObjectListChangedEventArgs e) 
         {
-            if (e.Location != currentShaft)
+            if (e.Location != detector.currentShaft)
                 return;
 
             foreach (var item in e.Removed)
@@ -94,19 +100,15 @@ namespace OreDetector
                     continue;
 
                 detector.MinedOres[item.Value.DisplayName].Add(item.Value);
-                //break; ??
             }
-            foreach (var item in detector.Ores)
-            {
-                Monitor.Log($"Mined {item.Key}: {detector.MinedOres[item.Key].Count} / {item.Value.Count}");
-            }
+            detector.LookForSpawnedLadders();
         }
         private void OnRendered(object? sender, RenderedEventArgs e)
         {
             if(!Context.IsWorldReady) 
                 return;
 
-            if (Game1.player.currentLocation != currentShaft)
+            if (Game1.player.currentLocation != detector.currentShaft)
                 return;
 
             SpriteBatch batch = Game1.spriteBatch;
@@ -122,6 +124,52 @@ namespace OreDetector
                     DrawOverlayCursor(batch);
                     break;
             }
+            if (Config.arrowPointingToLadder)
+            {
+                DrawLineToLadder(batch);
+            }
+        }
+        private void DrawLineToLadder(SpriteBatch batch)
+        {
+            if (!detector.LadderRevealed) return;
+
+            foreach (Vector2 position in detector.ladderPositions)
+            {
+                int width = 5;
+                Vector2 ladderPosition = new Vector2((position.X * Game1.tileSize) - Game1.viewport.X + Game1.tileSize, (position.Y * Game1.tileSize) - Game1.viewport.Y + Game1.tileSize);
+                Vector2 playerPosition = new Vector2(Game1.player.Position.X - Game1.viewport.X, Game1.player.Position.Y - Game1.viewport.Y);
+                Vector2 startPos = ladderPosition;
+                Vector2 endPos = playerPosition;
+                // Create a texture as wide as the distance between two points and as high as
+                // the desired thickness of the line.
+                var distance = (int)Vector2.Distance(startPos, endPos);
+                var texture = new Texture2D(batch.GraphicsDevice, distance, width);
+
+                // Fill texture with given color.
+                Color color = Color.MistyRose;
+                var data = new Color[distance * width];
+                for (int i = 0; i < data.Length; i++)
+                {
+                    data[i] = color;
+                }
+                texture.SetData(data);
+
+                // Rotate about the beginning middle of the line.
+                var rotation = (float)Math.Atan2(endPos.Y - startPos.Y, endPos.X - startPos.X);
+                var origin = new Vector2(0, width / 2);
+
+                batch.Draw(
+                    texture,
+                    startPos,
+                    null,
+                    Color.White,
+                    rotation,
+                    origin,
+                    1.0f,
+                    SpriteEffects.None,
+                    1.0f);
+            }
+
         }
         private void DrawOverlay(SpriteBatch batch, Vector2 position, string result, float transparency)
         {
@@ -137,7 +185,7 @@ namespace OreDetector
                 result += text;
             }
             result += "Ladder: ";
-            result += detector.currentShaft.ladderHasSpawned ? "Yes" : "No";
+            result += detector.LadderRevealed ? "Yes" : "No";
 
             int counter = 0;
             foreach (var item in detector.Ores)
@@ -195,7 +243,7 @@ namespace OreDetector
                 result += text;
             }
             result += "Ladder: ";
-            result += detector.currentShaft.ladderHasSpawned ? "Yes" : "No";
+            result += detector.LadderRevealed ? "Yes" : "No";
             Vector2 finalPosition = position + new Vector2(-4 * padding, -200 - Game1.dialogueFont.LineSpacing * text_offsetY);
 
             int counter = 0;

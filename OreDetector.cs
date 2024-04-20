@@ -17,15 +17,16 @@ namespace OreDetector
 
         public Dictionary<string, List<StardewValley.Object>> MinedOres;
 
-        public OreDetector()
-        {
-        }
+        public Dictionary<string, string> itemIds;
+
+        public MineShaft currentShaft;
         public void GetOreInCurrentShaft()
         {
             Ores = new Dictionary<string, List<StardewValley.Object>>();
             MinedOres = new Dictionary<string, List<StardewValley.Object>>();
+            itemIds = new Dictionary<string, string>();
 
-            MineShaft currentShaft = (MineShaft)Game1.player.currentLocation;
+            currentShaft = (MineShaft)Game1.player.currentLocation;
             OverlaidDictionary current_ores = currentShaft.Objects;
             foreach (var ore in current_ores.Values)
             {
@@ -35,6 +36,7 @@ namespace OreDetector
                     if (!Ores.ContainsKey(ore.DisplayName))
                     {
                         Ores.Add(ore.DisplayName, new List<StardewValley.Object>());
+                        itemIds.Add(ore.DisplayName, ore.ItemId);
                         MinedOres.Add(ore.DisplayName, new List<StardewValley.Object>());
                     }
                     Ores[ore.DisplayName].Add(ore);
