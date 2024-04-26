@@ -21,6 +21,8 @@ namespace OreDetector
         {
             int screenWidth = Game1.viewport.Width;
             int screenHeight = Game1.viewport.Height;
+            if (!ModEntry.Config.showOreName)
+                rectangleWidth = 300;
             base.initialize(0, 0, screenWidth, screenHeight);
         }
         public override void draw(SpriteBatch b)
