@@ -11,5 +11,11 @@ namespace OreDetector
         public string PositionOption { get; set; } = "Above player";
 
         public bool arrowPointingToLadder = false;
+
+        public string arrowToLadderColor = "Red";
+
+        public bool arrowPointingToHole = false;
+
+        public string arrowToHoleColor = "Blue";
     }
 }
