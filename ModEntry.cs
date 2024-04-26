@@ -6,6 +6,7 @@ using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.ItemTypeDefinitions;
 using StardewValley.Locations;
+using StardewValley.Menus;
 
 namespace OreDetector
 {
@@ -25,7 +26,7 @@ namespace OreDetector
 
         private Texture2D? ladderTexture;
 
-        private static ModConfig? Config;
+        public static ModConfig? Config;
 
         private Dictionary<string, Color> lineColors = new Dictionary<string, Color>()
         {
@@ -45,6 +46,7 @@ namespace OreDetector
             helper.Events.Display.Rendered += this.OnRendered;
             helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
             helper.Events.World.NpcListChanged += OnNPCListChanged;
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
             ladderTexture = Helper.ModContent.Load<Texture2D>("assets\\ladder.png");
             Config = new ModConfig();
         }
@@ -99,9 +101,19 @@ namespace OreDetector
             getValue: () => Config.arrowToHoleColor,
             setValue: value => Config.arrowToHoleColor = value,
             allowedValues: new string[] { "Red", "Green", "Blue", "Yellow" }
-);
+            );
         }
 
+        private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
+        {
+            if (!Context.IsWorldReady) 
+                return;
+
+            if (e.Button == SButton.P)
+            {
+                Game1.activeClickableMenu = new InvisibleMenu();
+            }
+        }
         private void OnWarped(object? sender, WarpedEventArgs e)
         {
             if (e.NewLocation is MineShaft)
@@ -118,6 +130,7 @@ namespace OreDetector
 
             detector.LookForSpawnedLadders();
         }
+
         private void OnObjectListChanged(object? sender, ObjectListChangedEventArgs e) 
         {
             if (e.Location != detector.currentShaft)
@@ -133,6 +146,7 @@ namespace OreDetector
             detector.LookForSpawnedLadders();
             detector.LookForSpawnedHoles();
         }
+
         private void OnRendered(object? sender, RenderedEventArgs e)
         {
             if(!Context.IsWorldReady) 
@@ -153,6 +167,9 @@ namespace OreDetector
                 case "Next to cursor":
                     DrawOverlayCursor(batch);
                     break;
+                case "Custom":
+                    DrawOverlayCustomPosition(batch);
+                    break;
             }
             if (Config.arrowPointingToLadder)
             {
@@ -163,6 +180,7 @@ namespace OreDetector
                 DrawLineToTiles(batch, lineColors[Config.arrowToHoleColor], detector.HolePositions);
             }
         }
+
         private void DrawLineToTiles(SpriteBatch batch, Color color, List<Vector2> tiles)
         {
             if (tiles.Count <= 0) return;
@@ -205,12 +223,10 @@ namespace OreDetector
             }
 
         }
-        private void DrawOverlay(SpriteBatch batch, Vector2 position, string result, float transparency)
+        private void DrawOverlay(SpriteBatch batch, Vector2 position, float transparency)
         {
-            if (Game1.activeClickableMenu != null)
-                return;
-
             int padding = 0;
+            string result = "";
             foreach (var item in detector.Ores)
             {
                 string text = $"{item.Key}: {detector.MinedOres[item.Key].Count} / {item.Value.Count}\n";
@@ -225,15 +241,28 @@ namespace OreDetector
             foreach (var item in detector.Ores)
             {
                 string itemId = detector.itemIds[item.Key];
+
                 ParsedItemData data = ItemRegistry.GetDataOrErrorItem(itemId);
+                string itemTypeId = data.GetItemTypeId();
                 Texture2D texture = data.GetTexture();
                 Rectangle sourceRect = data.GetSourceRect();
-                batch.Draw(texture, position + new Vector2(-4 * padding, Game1.dialogueFont.LineSpacing * counter), sourceRect, Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+                int bigCraftableOffset = itemTypeId == "(BC)" ? 12 : 0;
+                bool isBigCraftable = itemTypeId == "(BC)";
+                batch.Draw(texture, position + new Vector2(-4 * padding + bigCraftableOffset, Game1.dialogueFont.LineSpacing * counter), sourceRect, Color.White * transparency, 0f, Vector2.Zero, isBigCraftable ? 1.5f : 3f, SpriteEffects.None, 0f);
                 counter++;
             }
             batch.Draw(ladderTexture, position + new Vector2(-4 * padding, Game1.dialogueFont.LineSpacing * counter), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
 
             batch.DrawString(Game1.dialogueFont, result, position, Color.White * transparency);
+        }
+
+        private void DrawOverlayCustomPosition(SpriteBatch batch)
+        {
+            if (!Context.IsWorldReady || Game1.activeClickableMenu != null)
+                return;
+
+            Vector2 position = Config.customPosition;
+            DrawOverlay(batch, position , 1f);
         }
         private void DrawOverlayTopLeftCorner(SpriteBatch batch)
         {
@@ -241,8 +270,7 @@ namespace OreDetector
                 return;
 
             Vector2 position = new Vector2(64, 80);
-            string result = "";
-            DrawOverlay(batch, position, result, 1f);
+            DrawOverlay(batch, position, 1f);
         }
 
         private void DrawOverlayCursor(SpriteBatch batch)
@@ -252,8 +280,7 @@ namespace OreDetector
             Farmer player = Game1.player;
             float transparency = player.isMoving() && !player.UsingTool ? 0.1f : 1f;
             Vector2 position = Game1.getMousePosition().ToVector2() + new Vector2(125, 0);
-            string result = "";
-            DrawOverlay(batch, position, result, transparency);
+            DrawOverlay(batch, position, transparency);
         }
         private void DrawOverlayAbovePlayer(SpriteBatch batch)
         {
