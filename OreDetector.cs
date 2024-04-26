@@ -16,19 +16,23 @@ namespace OreDetector
 {
     public class OreDetector
     {
-        public Dictionary<string, List<StardewValley.Object>> Ores;
+        public Dictionary<string, List<StardewValley.Object>> Ores = new Dictionary<string, List<StardewValley.Object>>();
 
-        public Dictionary<string, List<StardewValley.Object>> MinedOres;
+        public Dictionary<string, List<StardewValley.Object>> MinedOres = new Dictionary<string, List<StardewValley.Object>>();
 
         public List<Vector2> ladderPositions = new List<Vector2>();
 
-        public Dictionary<string, string> itemIds;
+        public List<Vector2> HolePositions = new List<Vector2>();
+
+        public Dictionary<string, string> itemIds = new Dictionary<string, string>();
 
         public MineShaft currentShaft;
 
         private static OreDetector instance;
 
         public bool LadderRevealed { get => currentShaft.ladderHasSpawned || ladderPositions.Count > 0; }
+
+        public bool HoleRevealed { get => HolePositions.Count > 0; }
 
         private OreDetector() { }
 
@@ -58,12 +62,36 @@ namespace OreDetector
                 }
             }
         }
+        public void LookForSpawnedHoles()
+        {
+            if (currentShaft == null || currentShaft.mineLevel < 121) // >= 121 means its desert
+                return;
+
+            Layer layer = currentShaft.Map.GetLayer("Buildings");
+            for (int y = 0; y < layer.LayerHeight; y++)
+            {
+                for (int x = 0; x < layer.LayerWidth; x++)
+                {
+                    var tile = layer.Tiles[x, y];
+                    if (tile?.TileIndex == 174)
+                    {
+                        Vector2 holePostion = new Vector2(x, y);
+                        if (!HolePositions.Contains(holePostion))
+                        {
+                            HolePositions.Add(holePostion);
+                        }
+                    }
+                }
+            }
+
+        }
         public void GetOreInCurrentShaft()
         {
-            Ores = new Dictionary<string, List<StardewValley.Object>>();
-            MinedOres = new Dictionary<string, List<StardewValley.Object>>();
-            itemIds = new Dictionary<string, string>();
-            ladderPositions = new List<Vector2>();
+            Ores.Clear();
+            MinedOres.Clear();
+            itemIds.Clear();
+            ladderPositions.Clear();
+            HolePositions.Clear();
 
             currentShaft = (MineShaft)Game1.player.currentLocation;
             OverlaidDictionary current_ores = currentShaft.Objects;
