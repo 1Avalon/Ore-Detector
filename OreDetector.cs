@@ -75,7 +75,7 @@ namespace OreDetector
                     if (!Ores.ContainsKey(ore.DisplayName))
                     {
                         Ores.Add(ore.DisplayName, new List<StardewValley.Object>());
-                        itemIds.Add(ore.DisplayName, ore.ItemId);
+                        itemIds.Add(ore.DisplayName, ore.QualifiedItemId);
                         MinedOres.Add(ore.DisplayName, new List<StardewValley.Object>());
                     }
                     Ores[ore.DisplayName].Add(ore);
