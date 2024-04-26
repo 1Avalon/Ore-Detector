@@ -27,6 +27,15 @@ namespace OreDetector
 
         private static ModConfig? Config;
 
+        private Dictionary<string, Color> lineColors = new Dictionary<string, Color>()
+        {
+            ["Red"] = Color.Red,
+            ["Blue"] = Color.Blue,
+            ["Green"] = Color.Green,
+            ["Yellow"] = Color.Yellow,
+        };
+
+
         public override void Entry(IModHelper helper)
         {
             instance = this;
@@ -39,7 +48,6 @@ namespace OreDetector
             ladderTexture = Helper.ModContent.Load<Texture2D>("assets\\ladder.png");
             Config = new ModConfig();
         }
-
 
         /*********
         ** Private methods
@@ -64,14 +72,34 @@ namespace OreDetector
                 name: () => "Position",
                 getValue: () => Config.PositionOption,
                 setValue: value => Config.PositionOption = value,
-                allowedValues: new string[] { "Above player", "Top left", "Next to cursor" }
+                allowedValues: new string[] { "Above player", "Top left", "Next to cursor", "Custom" }
             );
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Draw Arrow pointing towards ladder",
+                name: () => "Draw line to ladder",
                 getValue: () => Config.arrowPointingToLadder,
                 setValue: value => Config.arrowPointingToLadder = value
             );
+            configMenu.AddTextOption(
+                mod: this.ModManifest,
+                name: () => "Line color for ladder",
+                getValue: () => Config.arrowToLadderColor,
+                setValue: value => Config.arrowToLadderColor = value,
+                allowedValues: new string[] { "Red", "Green", "Blue", "Yellow" }
+            );
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Draw line to hole",
+                getValue: () => Config.arrowPointingToHole,
+                setValue: value => Config.arrowPointingToHole = value
+            );
+            configMenu.AddTextOption(
+            mod: this.ModManifest,
+            name: () => "Line color for ladder",
+            getValue: () => Config.arrowToHoleColor,
+            setValue: value => Config.arrowToHoleColor = value,
+            allowedValues: new string[] { "Red", "Green", "Blue", "Yellow" }
+);
         }
 
         private void OnWarped(object? sender, WarpedEventArgs e)
@@ -103,6 +131,7 @@ namespace OreDetector
                 detector.MinedOres[item.Value.DisplayName].Add(item.Value);
             }
             detector.LookForSpawnedLadders();
+            detector.LookForSpawnedHoles();
         }
         private void OnRendered(object? sender, RenderedEventArgs e)
         {
@@ -127,14 +156,18 @@ namespace OreDetector
             }
             if (Config.arrowPointingToLadder)
             {
-                DrawLineToLadder(batch);
+                DrawLineToTiles(batch, lineColors[Config.arrowToLadderColor], detector.ladderPositions);
+            }
+            if (Config.arrowPointingToHole)
+            {
+                DrawLineToTiles(batch, lineColors[Config.arrowToHoleColor], detector.HolePositions);
             }
         }
-        private void DrawLineToLadder(SpriteBatch batch)
+        private void DrawLineToTiles(SpriteBatch batch, Color color, List<Vector2> tiles)
         {
-            if (!detector.LadderRevealed) return;
+            if (tiles.Count <= 0) return;
 
-            foreach (Vector2 position in detector.ladderPositions)
+            foreach (Vector2 position in tiles)
             {
                 int width = 5;
                 Vector2 ladderPosition = new Vector2((position.X * Game1.tileSize) - Game1.viewport.X + Game1.tileSize / 2, (position.Y * Game1.tileSize) - Game1.viewport.Y + Game1.tileSize / 2);
@@ -147,13 +180,7 @@ namespace OreDetector
                 var texture = new Texture2D(batch.GraphicsDevice, distance, width);
 
                 // Fill texture with given color.
-                float maxLength = 3000f;
 
-                float similarity = 1.0f - (distance / maxLength);
-
-                similarity = Math.Max(0, Math.Min(1, similarity));
-
-                Color color = Color.Lerp(Color.Red, Color.Green, similarity); 
                 var data = new Color[distance * width];
                 for (int i = 0; i < data.Length; i++)
                 {
