@@ -102,6 +102,12 @@ namespace OreDetector
             setValue: value => Config.arrowToHoleColor = value,
             allowedValues: new string[] { "Red", "Green", "Blue", "Yellow" }
             );
+            configMenu.AddBoolOption(
+            mod: this.ModManifest,
+            name: () => "Display Ore Name",
+            getValue: () => Config.showOreName,
+            setValue: value => Config.showOreName = value
+            );
         }
 
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
@@ -229,11 +235,11 @@ namespace OreDetector
             string result = "";
             foreach (var item in detector.Ores)
             {
-                string text = $"{item.Key}: {detector.MinedOres[item.Key].Count} / {item.Value.Count}\n";
-                if (text.Length > padding)
-                    padding = text.Length;
+                string oreName = Config.showOreName ? $"{item.Key}: " : ""; 
+                string text = $"{oreName}{detector.MinedOres[item.Key].Count} / {item.Value.Count}\n";
                 result += text;
             }
+            padding = padding > 0 ? padding : 16;
             result += "Ladder: ";
             result += detector.LadderRevealed ? "Yes" : "No";
 
@@ -297,8 +303,8 @@ namespace OreDetector
             int padding = 0;
             foreach (var item in detector.Ores)
             {
-                //batch.Draw(SpringObjects, position + new Vector2(0, Game1.dialogueFont.LineSpacing * counter), new Rectangle(column * 16, row * 16, 16, 16), Color.White, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
-                string text = $"{item.Key}: {detector.MinedOres[item.Key].Count} / {item.Value.Count}\n";
+                string oreName = Config.showOreName ? $"{item.Key}: " : "";
+                string text = $"{oreName}{detector.MinedOres[item.Key].Count} / {item.Value.Count}\n";
                 if (text.Length > padding)
                     padding = text.Length;
                 result += text;

@@ -19,6 +19,8 @@ namespace OreDetector
 
         public string arrowToHoleColor = "Blue";
 
+        public bool showOreName = true;
+
         public Vector2 customPosition = new Vector2(0, 0);
     }
 }
