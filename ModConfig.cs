@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Xna.Framework;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,5 +18,7 @@ namespace OreDetector
         public bool arrowPointingToHole = false;
 
         public string arrowToHoleColor = "Blue";
+
+        public Vector2 customPosition = new Vector2(0, 0);
     }
 }
