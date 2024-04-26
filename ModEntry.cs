@@ -19,13 +19,13 @@ namespace OreDetector
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         /// 
 
-        public static ModEntry instance;
+        public static ModEntry? instance;
 
-        private OreDetector detector;
+        private OreDetector? detector;
 
-        private Texture2D ladderTexture;
+        private Texture2D? ladderTexture;
 
-        private static ModConfig Config;
+        private static ModConfig? Config;
 
         public override void Entry(IModHelper helper)
         {
@@ -35,6 +35,7 @@ namespace OreDetector
             helper.Events.World.ObjectListChanged += this.OnObjectListChanged;
             helper.Events.Display.Rendered += this.OnRendered;
             helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
+            helper.Events.World.NpcListChanged += OnNPCListChanged;
             ladderTexture = Helper.ModContent.Load<Texture2D>("assets\\ladder.png");
             Config = new ModConfig();
         }
@@ -82,7 +83,7 @@ namespace OreDetector
             }
         }
 
-        private void OnNPCListChanged(object sender, NpcListChangedEventArgs e)
+        private void OnNPCListChanged(object? sender, NpcListChangedEventArgs e)
         {
             if (detector.currentShaft == null)
                 return;
@@ -136,8 +137,8 @@ namespace OreDetector
             foreach (Vector2 position in detector.ladderPositions)
             {
                 int width = 5;
-                Vector2 ladderPosition = new Vector2((position.X * Game1.tileSize) - Game1.viewport.X + Game1.tileSize, (position.Y * Game1.tileSize) - Game1.viewport.Y + Game1.tileSize);
-                Vector2 playerPosition = new Vector2(Game1.player.Position.X - Game1.viewport.X, Game1.player.Position.Y - Game1.viewport.Y);
+                Vector2 ladderPosition = new Vector2((position.X * Game1.tileSize) - Game1.viewport.X + Game1.tileSize / 2, (position.Y * Game1.tileSize) - Game1.viewport.Y + Game1.tileSize / 2);
+                Vector2 playerPosition = new Vector2(Game1.player.Position.X - Game1.viewport.X + Game1.tileSize / 2, Game1.player.Position.Y - Game1.viewport.Y);
                 Vector2 startPos = ladderPosition;
                 Vector2 endPos = playerPosition;
                 // Create a texture as wide as the distance between two points and as high as
@@ -146,7 +147,13 @@ namespace OreDetector
                 var texture = new Texture2D(batch.GraphicsDevice, distance, width);
 
                 // Fill texture with given color.
-                Color color = Color.MistyRose;
+                float maxLength = 3000f;
+
+                float similarity = 1.0f - (distance / maxLength);
+
+                similarity = Math.Max(0, Math.Min(1, similarity));
+
+                Color color = Color.Lerp(Color.Red, Color.Green, similarity); 
                 var data = new Color[distance * width];
                 for (int i = 0; i < data.Length; i++)
                 {
@@ -242,6 +249,7 @@ namespace OreDetector
                     padding = text.Length;
                 result += text;
             }
+            padding = padding > 0 ? padding : 16;
             result += "Ladder: ";
             result += detector.LadderRevealed ? "Yes" : "No";
             Vector2 finalPosition = position + new Vector2(-4 * padding, -200 - Game1.dialogueFont.LineSpacing * text_offsetY);
@@ -250,13 +258,17 @@ namespace OreDetector
             foreach (var item in detector.Ores)
             {
                 string itemId = detector.itemIds[item.Key];
+
                 ParsedItemData data = ItemRegistry.GetDataOrErrorItem(itemId);
+                string itemTypeId = data.GetItemTypeId();
                 Texture2D texture = data.GetTexture();
                 Rectangle sourceRect = data.GetSourceRect();
-                batch.Draw(texture, finalPosition + new Vector2(-4 * padding, Game1.dialogueFont.LineSpacing * counter), sourceRect, Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+                int bigCraftableOffset = itemTypeId == "(BC)" ? 12 : 0;
+                bool isBigCraftable = itemTypeId == "(BC)";
+                batch.Draw(texture, finalPosition + new Vector2(-4 * padding + bigCraftableOffset, Game1.dialogueFont.LineSpacing * counter), sourceRect, Color.White * transparency, 0f, Vector2.Zero, isBigCraftable ? 1.5f : 3f, SpriteEffects.None, 0f);
                 counter++;
             }
-            batch.Draw(ladderTexture, finalPosition + new Vector2(-4 * padding, Game1.dialogueFont.LineSpacing * counter), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+            batch.Draw(ladderTexture, finalPosition + new Vector2(-4 * padding, Game1.dialogueFont.LineSpacing * counter + 10), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
 
             batch.DrawString(Game1.dialogueFont, result, finalPosition, Color.White * transparency);
         }
