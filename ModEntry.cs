@@ -28,6 +28,8 @@ namespace OreDetector
 
         private Texture2D? holeTexture;
 
+        private bool informationHidden = false;
+
         public static ModConfig? Config;
 
         private Dictionary<string, Color> lineColors = new Dictionary<string, Color>()
@@ -125,6 +127,12 @@ namespace OreDetector
             getValue: () => Config.customPositionKeybind,
             setValue: value => Config.customPositionKeybind = value
             );
+            configMenu.AddKeybind(
+                mod: this.ModManifest,
+                name: () => I18n.OreDetector_Config_HideInformation(),
+                getValue: () => Config.hideInformationKeybind,
+                setValue: value => Config.hideInformationKeybind = value
+                );
         }
 
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
@@ -136,6 +144,10 @@ namespace OreDetector
             {
                 Game1.activeClickableMenu = new InvisibleMenu();
                 Config.PositionOption = I18n.OreDetector_Config_Custom();
+            }
+            else if (e.Button == Config.hideInformationKeybind)
+            {
+                informationHidden = !informationHidden;
             }
         }
         private void OnWarped(object? sender, WarpedEventArgs e)
@@ -176,7 +188,7 @@ namespace OreDetector
             if(!Context.IsWorldReady) 
                 return;
 
-            if (Game1.player.currentLocation != detector.currentShaft)
+            if (Game1.player.currentLocation != detector.currentShaft || informationHidden)
                 return;
 
             SpriteBatch batch = Game1.spriteBatch;
@@ -262,7 +274,7 @@ namespace OreDetector
 
 
             int counter = 0;
-            int offset = Config.showOreName ? -4 : -8;
+            int offset = Config.showOreName ? -8 : -4;
             foreach (var item in detector.Ores)
             {
                 string itemId = detector.itemIds[item.Key];
