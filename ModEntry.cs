@@ -26,6 +26,8 @@ namespace OreDetector
 
         private Texture2D? ladderTexture;
 
+        private Texture2D? holeTexture;
+
         public static ModConfig? Config;
 
         private Dictionary<string, Color> lineColors = new Dictionary<string, Color>()
@@ -39,6 +41,7 @@ namespace OreDetector
 
         public override void Entry(IModHelper helper)
         {
+            I18n.Init(Helper.Translation);
             instance = this;
             detector = OreDetector.GetOreDetector();
             helper.Events.Player.Warped += this.OnWarped;
@@ -48,6 +51,7 @@ namespace OreDetector
             helper.Events.World.NpcListChanged += OnNPCListChanged;
             helper.Events.Input.ButtonPressed += OnButtonPressed;
             ladderTexture = Helper.ModContent.Load<Texture2D>("assets\\ladder.png");
+            holeTexture = Helper.ModContent.Load<Texture2D>("assets\\hole.png");
             Config = new ModConfig();
         }
 
@@ -69,44 +73,57 @@ namespace OreDetector
                 reset: () => Config = new ModConfig(),
                 save: () => this.Helper.WriteConfig(Config)
             );
+
             configMenu.AddTextOption(
                 mod: this.ModManifest,
-                name: () => "Position",
+                name: () => I18n.OreDetector_Config_PositionOption(),
                 getValue: () => Config.PositionOption,
                 setValue: value => Config.PositionOption = value,
-                allowedValues: new string[] { "Above player", "Top left", "Next to cursor", "Custom" }
+                allowedValues: new string[] { I18n.OreDetector_Config_AbovePlayer(), I18n.OreDetector_Config_TopLeft(), I18n.OreDetector_Config_NextToCursor(), I18n.OreDetector_Config_Custom() }
             );
+
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Draw line to ladder",
+                name: () => I18n.OreDetector_Config_DrawLineToLadder(),
                 getValue: () => Config.arrowPointingToLadder,
                 setValue: value => Config.arrowPointingToLadder = value
             );
+
             configMenu.AddTextOption(
                 mod: this.ModManifest,
-                name: () => "Line color for ladder",
+                name: () => I18n.OreDetector_Config_LineLadderColor(),
                 getValue: () => Config.arrowToLadderColor,
                 setValue: value => Config.arrowToLadderColor = value,
-                allowedValues: new string[] { "Red", "Green", "Blue", "Yellow" }
+                allowedValues: new string[] { I18n.OreDetector_Config_Color_Red(), I18n.OreDetector_Config_Color_Green(), I18n.OreDetector_Config_Color_Blue(), I18n.OreDetector_Config_Color_Yellow() }
             );
+
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Draw line to hole",
+                name: () => I18n.OreDetector_Config_DrawLineToHole(),
                 getValue: () => Config.arrowPointingToHole,
                 setValue: value => Config.arrowPointingToHole = value
             );
+
             configMenu.AddTextOption(
             mod: this.ModManifest,
-            name: () => "Line color for ladder",
+            name: () => I18n.OreDetector_Config_LineHoleColor(),
             getValue: () => Config.arrowToHoleColor,
             setValue: value => Config.arrowToHoleColor = value,
-            allowedValues: new string[] { "Red", "Green", "Blue", "Yellow" }
+            allowedValues: new string[] { I18n.OreDetector_Config_Color_Red(), I18n.OreDetector_Config_Color_Green(), I18n.OreDetector_Config_Color_Blue(), I18n.OreDetector_Config_Color_Yellow() }
             );
+
             configMenu.AddBoolOption(
             mod: this.ModManifest,
-            name: () => "Display Ore Name",
+            name: () => I18n.OreDetector_DisplayOreName(),
             getValue: () => Config.showOreName,
             setValue: value => Config.showOreName = value
+            );
+
+            configMenu.AddKeybind(
+            mod: this.ModManifest,
+            name: () => I18n.OreDetector_SetCustomPostion(),
+            getValue: () => Config.customPositionKeybind,
+            setValue: value => Config.customPositionKeybind = value
             );
         }
 
@@ -115,9 +132,10 @@ namespace OreDetector
             if (!Context.IsWorldReady) 
                 return;
 
-            if (e.Button == SButton.P)
+            if (e.Button == Config?.customPositionKeybind)
             {
                 Game1.activeClickableMenu = new InvisibleMenu();
+                Config.PositionOption = I18n.OreDetector_Config_Custom();
             }
         }
         private void OnWarped(object? sender, WarpedEventArgs e)
@@ -162,21 +180,17 @@ namespace OreDetector
                 return;
 
             SpriteBatch batch = Game1.spriteBatch;
-            switch(Config.PositionOption)
-            {
-                case "Above player":
-                    DrawOverlayAbovePlayer(batch);
-                    break;
-                case "Top left":
-                    DrawOverlayTopLeftCorner(batch);
-                    break;
-                case "Next to cursor":
-                    DrawOverlayCursor(batch);
-                    break;
-                case "Custom":
-                    DrawOverlayCustomPosition(batch);
-                    break;
-            }
+
+            string positionOption = Config.PositionOption;
+            if (positionOption == I18n.OreDetector_Config_NextToCursor())
+                DrawOverlayCursor(batch);
+            else if (positionOption == I18n.OreDetector_Config_AbovePlayer())
+                DrawOverlayAbovePlayer(batch);
+            else if (positionOption == I18n.OreDetector_Config_TopLeft())
+                DrawOverlayTopLeftCorner(batch);
+            else if (positionOption == I18n.OreDetector_Config_Custom())
+                DrawOverlayCustomPosition(batch);
+
             if (Config.arrowPointingToLadder)
             {
                 DrawLineToTiles(batch, lineColors[Config.arrowToLadderColor], detector.ladderPositions);
@@ -190,6 +204,8 @@ namespace OreDetector
         private void DrawLineToTiles(SpriteBatch batch, Color color, List<Vector2> tiles)
         {
             if (tiles.Count <= 0) return;
+
+            if (Game1.activeClickableMenu != null || Game1.IsFading()) return;
 
             foreach (Vector2 position in tiles)
             {
@@ -240,10 +256,13 @@ namespace OreDetector
                 result += text;
             }
             padding = padding > 0 ? padding : 16;
-            result += "Ladder: ";
-            result += detector.LadderRevealed ? "Yes" : "No";
+            result += Config.showOreName ? $"{I18n.OreDetector_Ladder()}: " : "";
+            result += detector.LadderRevealed ? I18n.OreDetector_Yes() : I18n.OreDetector_No();
+
+
 
             int counter = 0;
+            int offset = Config.showOreName ? -4 : -8;
             foreach (var item in detector.Ores)
             {
                 string itemId = detector.itemIds[item.Key];
@@ -254,17 +273,23 @@ namespace OreDetector
                 Rectangle sourceRect = data.GetSourceRect();
                 int bigCraftableOffset = itemTypeId == "(BC)" ? 12 : 0;
                 bool isBigCraftable = itemTypeId == "(BC)";
-                batch.Draw(texture, position + new Vector2(-4 * padding + bigCraftableOffset, Game1.dialogueFont.LineSpacing * counter), sourceRect, Color.White * transparency, 0f, Vector2.Zero, isBigCraftable ? 1.5f : 3f, SpriteEffects.None, 0f);
+                batch.Draw(texture, position + new Vector2(offset * padding + bigCraftableOffset, Game1.dialogueFont.LineSpacing * counter), sourceRect, Color.White * transparency, 0f, Vector2.Zero, isBigCraftable ? 1.5f : 3f, SpriteEffects.None, 0f);
                 counter++;
             }
-            batch.Draw(ladderTexture, position + new Vector2(-4 * padding, Game1.dialogueFont.LineSpacing * counter), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+            batch.Draw(ladderTexture, position + new Vector2(offset * padding, Game1.dialogueFont.LineSpacing * counter), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+            if (detector.isDesertMine)
+            {
+                result += $"\n{I18n.OreDetector_Hole()}: ";
+                result += detector.HoleRevealed ? I18n.OreDetector_Yes() : I18n.OreDetector_No();
+                batch.Draw(holeTexture, position + new Vector2(offset * padding, Game1.dialogueFont.LineSpacing * (counter + 1)), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+            }
 
             batch.DrawString(Game1.dialogueFont, result, position, Color.White * transparency);
         }
 
         private void DrawOverlayCustomPosition(SpriteBatch batch)
         {
-            if (!Context.IsWorldReady || Game1.activeClickableMenu != null)
+            if (!Context.IsWorldReady || Game1.activeClickableMenu != null || Game1.IsFading())
                 return;
 
             Vector2 position = Config.customPosition;
@@ -272,7 +297,7 @@ namespace OreDetector
         }
         private void DrawOverlayTopLeftCorner(SpriteBatch batch)
         {
-            if (!Context.IsWorldReady || Game1.activeClickableMenu != null)
+            if (!Context.IsWorldReady || Game1.activeClickableMenu != null || Game1.IsFading())
                 return;
 
             Vector2 position = new Vector2(64, 80);
@@ -310,8 +335,9 @@ namespace OreDetector
                 result += text;
             }
             padding = padding > 0 ? padding : 16;
-            result += "Ladder: ";
-            result += detector.LadderRevealed ? "Yes" : "No";
+            int offset = Config.showOreName ? -4 : -8;
+            result += Config.showOreName ? $"{I18n.OreDetector_Ladder()}: " : "";
+            result += detector.LadderRevealed ? I18n.OreDetector_Yes() : I18n.OreDetector_No();
             Vector2 finalPosition = position + new Vector2(-4 * padding, -200 - Game1.dialogueFont.LineSpacing * text_offsetY);
 
             int counter = 0;
@@ -325,10 +351,16 @@ namespace OreDetector
                 Rectangle sourceRect = data.GetSourceRect();
                 int bigCraftableOffset = itemTypeId == "(BC)" ? 12 : 0;
                 bool isBigCraftable = itemTypeId == "(BC)";
-                batch.Draw(texture, finalPosition + new Vector2(-4 * padding + bigCraftableOffset, Game1.dialogueFont.LineSpacing * counter), sourceRect, Color.White * transparency, 0f, Vector2.Zero, isBigCraftable ? 1.5f : 3f, SpriteEffects.None, 0f);
+                batch.Draw(texture, finalPosition + new Vector2(offset * padding + bigCraftableOffset, Game1.dialogueFont.LineSpacing * counter), sourceRect, Color.White * transparency, 0f, Vector2.Zero, isBigCraftable ? 1.5f : 3f, SpriteEffects.None, 0f);
                 counter++;
             }
-            batch.Draw(ladderTexture, finalPosition + new Vector2(-4 * padding, Game1.dialogueFont.LineSpacing * counter + 10), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+            batch.Draw(ladderTexture, finalPosition + new Vector2(offset * padding, Game1.dialogueFont.LineSpacing * counter + 10), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+            if (detector.isDesertMine)
+            {
+                result += $"\n{I18n.OreDetector_Hole()}: ";
+                result += detector.HoleRevealed ? I18n.OreDetector_Yes() : I18n.OreDetector_No();
+                batch.Draw(holeTexture, finalPosition + new Vector2(offset * padding, Game1.dialogueFont.LineSpacing * (counter + 1)), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
+            }
 
             batch.DrawString(Game1.dialogueFont, result, finalPosition, Color.White * transparency);
         }
