@@ -34,6 +34,8 @@ namespace OreDetector
 
         public bool HoleRevealed { get => HolePositions.Count > 0; }
 
+        public bool isDesertMine { get => currentShaft.mineLevel > 120; }
+
         private OreDetector() { }
 
         public static OreDetector GetOreDetector()
@@ -64,7 +66,7 @@ namespace OreDetector
         }
         public void LookForSpawnedHoles()
         {
-            if (currentShaft == null || currentShaft.mineLevel < 121) // >= 121 means its desert
+            if (currentShaft == null || !isDesertMine) // >= 121 means its desert
                 return;
 
             Layer layer = currentShaft.Map.GetLayer("Buildings");
