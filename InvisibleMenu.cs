@@ -35,6 +35,7 @@ namespace OreDetector
             }
             int mouseX = Game1.getMouseX();
             int mouseY = Game1.getMouseY();
+            b.DrawString(Game1.dialogueFont, I18n.OreDetector_SetPosition(), new Vector2(mouseX - rectangleWidth / 2 - 75, mouseY - rectangleHeight / 2 - Game1.dialogueFont.LineSpacing), Color.White);
             b.Draw(rectangle, new Rectangle(mouseX - rectangleWidth / 2 - 75, mouseY - rectangleHeight / 2, rectangleWidth, rectangleHeight), Color.Red * 0.5f);
             drawMouse(b);
         }
