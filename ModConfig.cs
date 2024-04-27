@@ -25,5 +25,7 @@ namespace OreDetector
         public Vector2 customPosition = new Vector2(0, 0);
 
         public SButton customPositionKeybind = SButton.P;
+
+        public SButton hideInformationKeybind = SButton.J;
     }
 }
