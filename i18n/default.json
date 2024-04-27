@@ -22,5 +22,7 @@
   "OreDetector.Config.Color.Yellow": "Yellow",
 
   "OreDetector.DisplayOreName": "Display ore name",
-  "OreDetector.SetCustomPostion": "Set custom position"
+  "OreDetector.SetCustomPostion": "Set custom position",
+
+  "OreDetector.Config.HideInformation": "Hide/Show information"
 }
