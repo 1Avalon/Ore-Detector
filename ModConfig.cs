@@ -27,5 +27,7 @@ namespace OreDetector
         public SButton customPositionKeybind = SButton.P;
 
         public SButton hideInformationKeybind = SButton.J;
+
+        public SButton whiteBlackListMenuKeybind = SButton.K;
     }
 }
