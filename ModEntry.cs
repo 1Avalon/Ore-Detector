@@ -28,6 +28,10 @@ namespace OreDetector
 
         private Texture2D? holeTexture;
 
+        public static Texture2D? blackListButtonTexture;
+
+        public static Texture2D? whiteListButtonTexture;
+
         private bool informationHidden = false;
 
         public static ModConfig? Config;
@@ -54,7 +58,9 @@ namespace OreDetector
             helper.Events.Input.ButtonPressed += OnButtonPressed;
             ladderTexture = Helper.ModContent.Load<Texture2D>("assets\\ladder.png");
             holeTexture = Helper.ModContent.Load<Texture2D>("assets\\hole.png");
-            Config = new ModConfig();
+            blackListButtonTexture = Helper.ModContent.Load<Texture2D>("assets\\blacklist.png");
+            whiteListButtonTexture = Helper.ModContent.Load<Texture2D>("assets\\whitelist.png");
+            Config = Helper.ReadConfig<ModConfig>();
         }
 
         /*********
@@ -132,7 +138,7 @@ namespace OreDetector
                 name: () => I18n.OreDetector_Config_HideInformation(),
                 getValue: () => Config.hideInformationKeybind,
                 setValue: value => Config.hideInformationKeybind = value
-                );
+            );
         }
 
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
@@ -148,6 +154,10 @@ namespace OreDetector
             else if (e.Button == Config.hideInformationKeybind)
             {
                 informationHidden = !informationHidden;
+            }
+            else if (e.Button == Config.whiteBlackListMenuKeybind)
+            {
+                Game1.activeClickableMenu = new BlackWhiteListMenu();
             }
         }
         private void OnWarped(object? sender, WarpedEventArgs e)
@@ -291,7 +301,7 @@ namespace OreDetector
             batch.Draw(ladderTexture, position + new Vector2(offset * padding, Game1.dialogueFont.LineSpacing * counter), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
             if (detector.isDesertMine)
             {
-                result += $"\n{I18n.OreDetector_Hole()}: ";
+                result += Config.showOreName ? $"\n{I18n.OreDetector_Hole()}: " : "\n";
                 result += detector.HoleRevealed ? I18n.OreDetector_Yes() : I18n.OreDetector_No();
                 batch.Draw(holeTexture, position + new Vector2(offset * padding, Game1.dialogueFont.LineSpacing * (counter + 1)), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
             }
@@ -369,7 +379,7 @@ namespace OreDetector
             batch.Draw(ladderTexture, finalPosition + new Vector2(offset * padding, Game1.dialogueFont.LineSpacing * counter + 10), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
             if (detector.isDesertMine)
             {
-                result += $"\n{I18n.OreDetector_Hole()}: ";
+                result += Config.showOreName ? $"\n{I18n.OreDetector_Hole()}: " : "\n";
                 result += detector.HoleRevealed ? I18n.OreDetector_Yes() : I18n.OreDetector_No();
                 batch.Draw(holeTexture, finalPosition + new Vector2(offset * padding, Game1.dialogueFont.LineSpacing * (counter + 1)), new Rectangle(0, 0, 16, 16), Color.White * transparency, 0f, Vector2.Zero, 3f, SpriteEffects.None, 0f);
             }
