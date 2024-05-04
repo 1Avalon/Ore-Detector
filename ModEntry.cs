@@ -7,6 +7,7 @@ using StardewValley;
 using StardewValley.ItemTypeDefinitions;
 using StardewValley.Locations;
 using StardewValley.Menus;
+using System.Reflection;
 
 namespace OreDetector
 {
@@ -36,6 +37,8 @@ namespace OreDetector
 
         public static ModConfig? Config;
 
+        public static List<string> blackListedNames = new List<string>();
+
         private Dictionary<string, Color> lineColors = new Dictionary<string, Color>()
         {
             ["Red"] = Color.Red,
@@ -56,6 +59,8 @@ namespace OreDetector
             helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
             helper.Events.World.NpcListChanged += OnNPCListChanged;
             helper.Events.Input.ButtonPressed += OnButtonPressed;
+            helper.Events.GameLoop.Saved += OnSaved;
+            helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
             ladderTexture = Helper.ModContent.Load<Texture2D>("assets\\ladder.png");
             holeTexture = Helper.ModContent.Load<Texture2D>("assets\\hole.png");
             blackListButtonTexture = Helper.ModContent.Load<Texture2D>("assets\\blacklist.png");
@@ -139,8 +144,24 @@ namespace OreDetector
                 getValue: () => Config.hideInformationKeybind,
                 setValue: value => Config.hideInformationKeybind = value
             );
+            configMenu.AddKeybind(
+                mod: this.ModManifest,
+                name: () => I18n.OreDetector_Config_ShowBlacklist(),
+                getValue: () => Config.blacklistMenuKeybind,
+                setValue: value => Config.blacklistMenuKeybind = value
+            );
         }
 
+        private void OnSaved(object? sender, SavedEventArgs e)
+        {
+            Helper.Data.WriteSaveData("Blacklist", blackListedNames);
+            Monitor.Log("Saved blacklist");
+        }
+        private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
+        {
+            blackListedNames = Helper.Data.ReadSaveData<List<string>>("Blacklist");
+            Monitor.Log($"Loaded blacklist\nElements: {blackListedNames.Count}");
+        }
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
         {
             if (!Context.IsWorldReady) 
@@ -155,9 +176,9 @@ namespace OreDetector
             {
                 informationHidden = !informationHidden;
             }
-            else if (e.Button == Config.whiteBlackListMenuKeybind)
+            else if (e.Button == Config.blacklistMenuKeybind)
             {
-                Game1.activeClickableMenu = new BlackWhiteListMenu();
+                Game1.activeClickableMenu = new ListModifierUI(ref blackListedNames);
             }
         }
         private void OnWarped(object? sender, WarpedEventArgs e)
@@ -273,6 +294,9 @@ namespace OreDetector
             string result = "";
             foreach (var item in detector.Ores)
             {
+                if (blackListedNames.Contains(item.Key))
+                    continue;
+
                 string oreName = Config.showOreName ? $"{item.Key}: " : ""; 
                 string text = $"{oreName}{detector.MinedOres[item.Key].Count} / {item.Value.Count}\n";
                 result += text;
@@ -287,6 +311,9 @@ namespace OreDetector
             int offset = Config.showOreName ? -8 : -4;
             foreach (var item in detector.Ores)
             {
+                if (blackListedNames.Contains(item.Key))
+                    continue;
+
                 string itemId = detector.itemIds[item.Key];
 
                 ParsedItemData data = ItemRegistry.GetDataOrErrorItem(itemId);
@@ -350,6 +377,8 @@ namespace OreDetector
             int padding = 0;
             foreach (var item in detector.Ores)
             {
+                if (blackListedNames.Contains(item.Key))
+                    continue;
                 string oreName = Config.showOreName ? $"{item.Key}: " : "";
                 string text = $"{oreName}{detector.MinedOres[item.Key].Count} / {item.Value.Count}\n";
                 if (text.Length > padding)
@@ -365,6 +394,8 @@ namespace OreDetector
             int counter = 0;
             foreach (var item in detector.Ores)
             {
+                if (blackListedNames.Contains(item.Key))
+                    continue;
                 string itemId = detector.itemIds[item.Key];
 
                 ParsedItemData data = ItemRegistry.GetDataOrErrorItem(itemId);
