@@ -21,6 +21,8 @@ namespace OreDetector
         private SaveModel model;
 
         private List<Point> bigCraftablePositions = new List<Point>();
+
+        private string hoverText;
         public ListModifierUI(ref SaveModel model) 
         {
             int width = Game1.viewport.Width / 2;
@@ -93,6 +95,19 @@ namespace OreDetector
                 }
             }
         }
+
+        public override void performHoverAction(int x, int y)
+        {
+            base.performHoverAction(x, y);
+            hoverText = "";
+            foreach (ClickableComponent component in components)
+            {
+                if (component.containsPoint(x, y))
+                {
+                    hoverText = component.name;
+                }
+            }
+        }
         public override void draw(SpriteBatch b)
         {
             b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.75f);
@@ -109,6 +124,8 @@ namespace OreDetector
             }
 
             b.DrawString(Game1.dialogueFont, I18n.OreDetector_Blacklist(), new Vector2(xPositionOnScreen + width / 2.5f, yPositionOnScreen + 125), Color.Black);
+
+            drawHoverText(b, hoverText, Game1.smallFont);
 
             drawMouse(b);
         }
