@@ -28,6 +28,10 @@ namespace OreDetector
 
         public MineShaft currentShaft;
 
+        public static List<string> foundTiles = new List<string>();
+
+        public static List<string> foundTileNames = new List<string>();
+
         private static OreDetector instance;
 
         public bool LadderRevealed { get => currentShaft.ladderHasSpawned || ladderPositions.Count > 0; }
@@ -100,8 +104,13 @@ namespace OreDetector
             foreach (var ore in current_ores.Values)
             {
                 //Debug.WriteLine($"{ore.Name} {ore.Category} {ore.ParentSheetIndex}");
-                if ((ore.Category == -999 && ore.Name != "Weeds") || ore.Category == -2 || (ore.Category == -9 && ore.Name == "Barrel"))
+                if (ore.Category == -999 || ore.Category == -2 || (ore.Category == -9 && ore.Name == "Barrel"))
                 {
+                    if (!foundTiles.Contains(ore.QualifiedItemId) && !foundTileNames.Contains(ore.DisplayName))
+                    {
+                        foundTileNames.Add(ore.DisplayName);
+                        foundTiles.Add(ore.QualifiedItemId);
+                    }
                     if (!Ores.ContainsKey(ore.DisplayName))
                     {
                         Ores.Add(ore.DisplayName, new List<StardewValley.Object>());
