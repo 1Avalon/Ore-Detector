@@ -28,8 +28,6 @@ namespace OreDetector
 
         public MineShaft currentShaft;
 
-        public static List<string> foundTiles = new List<string>();
-
         public static List<string> foundTileNames = new List<string>();
 
         private static OreDetector instance;
@@ -106,10 +104,10 @@ namespace OreDetector
                 //Debug.WriteLine($"{ore.Name} {ore.Category} {ore.ParentSheetIndex}");
                 if (ore.Category == -999 || ore.Category == -2 || (ore.Category == -9 && ore.Name == "Barrel"))
                 {
-                    if (!foundTiles.Contains(ore.QualifiedItemId) && !foundTileNames.Contains(ore.DisplayName))
+                    if (!ModEntry.saveModel.discoveredmaterialsQualifiedIds.Contains(ore.QualifiedItemId) && !ModEntry.saveModel.discoveredMaterials.Contains(ore.DisplayName))
                     {
-                        foundTileNames.Add(ore.DisplayName);
-                        foundTiles.Add(ore.QualifiedItemId);
+                        ModEntry.saveModel.discoveredMaterials.Add(ore.DisplayName);
+                        ModEntry.saveModel.discoveredmaterialsQualifiedIds.Add(ore.QualifiedItemId);
                     }
                     if (!Ores.ContainsKey(ore.DisplayName))
                     {

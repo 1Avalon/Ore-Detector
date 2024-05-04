@@ -18,20 +18,20 @@ namespace OreDetector
 
         private List<ClickableTextureComponent> blacklistedCompontents = new List<ClickableTextureComponent>();
 
-        private List<string> blacklist;
+        private SaveModel model;
 
         private List<Point> bigCraftablePositions = new List<Point>();
-        public ListModifierUI(ref List<string> blacklist) 
+        public ListModifierUI(ref SaveModel model) 
         {
             int width = Game1.viewport.Width / 2;
             int height = Game1.viewport.Height;
             base.initialize(Game1.viewport.Width / 2 - width / 2, Game1.viewport.Height / 2 - height / 2, width, height);
-            this.blacklist = blacklist;
+            this.model = model;
             getTiles();
         }
         private void getTiles()
         {
-            List<string> qualifiedObjectIds = OreDetector.foundTiles;
+            List<string> qualifiedObjectIds = model.discoveredmaterialsQualifiedIds;
 
             int counterX = 0;
             int counterY = 0;
@@ -60,7 +60,7 @@ namespace OreDetector
                 {
                     name = data.DisplayName
                 };
-                if (blacklist.Contains(data.DisplayName))
+                if (model.blacklistedNames.Contains(data.DisplayName))
                 {
                     blacklistedCompontents.Add(component);
                 }
@@ -77,7 +77,7 @@ namespace OreDetector
                 if (component.containsPoint(x, y) && !blacklistedCompontents.Contains(component))
                 {
                     blacklistedCompontents.Add(component);
-                    blacklist.Add(component.name);
+                    model.blacklistedNames.Add(component.name);
                     Game1.playSound("dialogueCharacter");
                     return;
                 }
@@ -87,7 +87,7 @@ namespace OreDetector
                 if (component.containsPoint(x, y) && blacklistedCompontents.Contains(component))
                 {
                     blacklistedCompontents.Remove(component);
-                    blacklist.Remove(component.name);
+                    model.blacklistedNames.Remove(component.name);
                     Game1.playSound("dialogueCharacterClose");
                     return;
                 }

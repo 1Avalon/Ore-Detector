@@ -37,7 +37,7 @@ namespace OreDetector
 
         public static ModConfig? Config;
 
-        public static List<string> blackListedNames = new List<string>();
+        public static SaveModel? saveModel;
 
         private Dictionary<string, Color> lineColors = new Dictionary<string, Color>()
         {
@@ -66,6 +66,7 @@ namespace OreDetector
             blackListButtonTexture = Helper.ModContent.Load<Texture2D>("assets\\blacklist.png");
             whiteListButtonTexture = Helper.ModContent.Load<Texture2D>("assets\\whitelist.png");
             Config = Helper.ReadConfig<ModConfig>();
+            saveModel = new SaveModel();
         }
 
         /*********
@@ -154,13 +155,15 @@ namespace OreDetector
 
         private void OnSaved(object? sender, SavedEventArgs e)
         {
-            Helper.Data.WriteSaveData("Blacklist", blackListedNames);
+            Helper.Data.WriteSaveData("AvalonMFX.OreDetector", saveModel);
             Monitor.Log("Saved blacklist");
         }
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
-            blackListedNames = Helper.Data.ReadSaveData<List<string>>("Blacklist");
-            Monitor.Log($"Loaded blacklist\nElements: {blackListedNames.Count}");
+            saveModel = Helper.Data.ReadSaveData<SaveModel>("AvalonMFX.OreDetector");
+                if (saveModel == null)
+                    saveModel = new SaveModel();
+            Monitor.Log($"Loaded blacklist\nElements: {saveModel.blacklistedNames.Count}");
         }
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
         {
@@ -178,7 +181,7 @@ namespace OreDetector
             }
             else if (e.Button == Config.blacklistMenuKeybind)
             {
-                Game1.activeClickableMenu = new ListModifierUI(ref blackListedNames);
+                Game1.activeClickableMenu = new ListModifierUI(ref saveModel);
             }
         }
         private void OnWarped(object? sender, WarpedEventArgs e)
@@ -294,7 +297,7 @@ namespace OreDetector
             string result = "";
             foreach (var item in detector.Ores)
             {
-                if (blackListedNames.Contains(item.Key))
+                if (saveModel.blacklistedNames.Contains(item.Key))
                     continue;
 
                 string oreName = Config.showOreName ? $"{item.Key}: " : ""; 
@@ -311,7 +314,7 @@ namespace OreDetector
             int offset = Config.showOreName ? -8 : -4;
             foreach (var item in detector.Ores)
             {
-                if (blackListedNames.Contains(item.Key))
+                if (saveModel.blacklistedNames.Contains(item.Key))
                     continue;
 
                 string itemId = detector.itemIds[item.Key];
@@ -377,7 +380,7 @@ namespace OreDetector
             int padding = 0;
             foreach (var item in detector.Ores)
             {
-                if (blackListedNames.Contains(item.Key))
+                if (saveModel.blacklistedNames.Contains(item.Key))
                     continue;
                 string oreName = Config.showOreName ? $"{item.Key}: " : "";
                 string text = $"{oreName}{detector.MinedOres[item.Key].Count} / {item.Value.Count}\n";
@@ -394,7 +397,7 @@ namespace OreDetector
             int counter = 0;
             foreach (var item in detector.Ores)
             {
-                if (blackListedNames.Contains(item.Key))
+                if (saveModel.blacklistedNames.Contains(item.Key))
                     continue;
                 string itemId = detector.itemIds[item.Key];
 
