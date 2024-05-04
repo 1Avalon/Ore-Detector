@@ -4,6 +4,7 @@
   "OreDetector.Ladder": "Ladder",
   "OreDetector.Hole": "Hole",
   "OreDetector.SetPosition": "Left click to confirm postion",
+  "OreDetector.Blacklist": "Blacklist",
 
   //Config
   "OreDetector.Config.PositionOption": "Position",
@@ -24,5 +25,7 @@
   "OreDetector.DisplayOreName": "Display ore name",
   "OreDetector.SetCustomPostion": "Set custom position",
 
-  "OreDetector.Config.HideInformation": "Hide/Show information"
+  "OreDetector.Config.HideInformation": "Hide/Show information",
+
+  "OreDetector.Config.ShowBlacklist": "Show Blacklist"
 }
